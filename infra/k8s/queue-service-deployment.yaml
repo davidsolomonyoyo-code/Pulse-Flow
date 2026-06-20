@@ -1,0 +1,68 @@
+# Forward-looking target manifest, adapted from the 14-volume blueprint's
+# Volume 8 example. NOT connected to a live cluster — see docs/MASTER_SPEC.md
+# Section 7. Treat this as "what we're building toward," not "what's deployed."
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: queue-service
+  namespace: flow
+  labels:
+    app: queue-service
+spec:
+  replicas: 3 # lower than the source blueprint's 6 — right-sized for a single-hospital MVP, not a national deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: queue-service
+  template:
+    metadata:
+      labels:
+        app: queue-service
+    spec:
+      serviceAccountName: queue-service
+      containers:
+        - name: app
+          image: registry.example.org/pulseflow/queue-service:0.1.0
+          ports:
+            - containerPort: 3002
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /healthz/readyz
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz/livez
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          envFrom:
+            - secretRef:
+                name: queue-service-secrets
+            - configMapRef:
+                name: queue-service-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: queue-service
+  namespace: flow
+spec:
+  selector:
+    app: queue-service
+  ports:
+    - port: 80
+      targetPort: 3002
+  type: ClusterIP

@@ -1,0 +1,10 @@
+{
+  "name": "pulseflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PulseFlow — healthcare patient-flow orchestration platform. See README.md and docs/MASTER_SPEC.md.",
+  "workspaces": [
+    "services/*",
+    "packages/*"
+  ]
+}
